@@ -1,5 +1,4 @@
 import string
-from unittest import result
 import requests
 
 WORD_LEN = 5
