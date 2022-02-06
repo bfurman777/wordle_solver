@@ -16,7 +16,7 @@ test_str = [None for i in range(WORD_LEN)]
 results = []  # string outputs
 
 with requests.get(ENGLISH_WORDS_LINK) as res:
-    all_words = set(s.lower() for s in res.text.split('\n') if len(s) == 5)
+    all_words = set(s.lower() for s in res.text.split('\n') if len(s) == WORD_LEN)
 
 '''
 Solve the global word 'test_str'
