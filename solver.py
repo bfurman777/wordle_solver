@@ -8,7 +8,7 @@ ENGLISH_WORDS_LINK = 'https://raw.githubusercontent.com/dwyl/english-words/maste
 # all lowercase (position is the 0-indexed index):
 known = {2:'i'}  # {position:letter}
 maybes = {'l':[1,2], 's':[4,3]}  # {letter:[not_pos]}  # correct_letter_wrong_location
-nots = set(c for c in 'abortfpweh')  # [letters]
+nots = set('abortfpweh')  # string of letters
 
 alphabet = string.ascii_lowercase
 
@@ -16,7 +16,7 @@ test_str = [None for i in range(WORD_LEN)]
 results = []  # string outputs
 
 with requests.get(ENGLISH_WORDS_LINK) as res:
-    all_words = set([s.lower() for s in res.text.split('\n') if len(s) == 5])
+    all_words = set(s.lower() for s in res.text.split('\n') if len(s) == 5)
 
 '''
 Solve the global word 'test_str'
@@ -50,6 +50,7 @@ def solve(i):
         solve(i+1)
 
 solve(0)
+
 actual_results = []
 for w in results:
     if w in all_words:
