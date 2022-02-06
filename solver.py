@@ -7,8 +7,8 @@ ENGLISH_WORDS_LINK = 'https://raw.githubusercontent.com/dwyl/english-words/maste
 
 # all lowercase (position is the 0-indexed index):
 known = {2:'i'}  # {position:letter}
-maybes = {'l':[1], 's':[4]}  # {letter:[not_pos]}  # correct_letter_wrong_location
-nots = set(c for c in 'abortfp')  # [letters]
+maybes = {'l':[1,2], 's':[4,3]}  # {letter:[not_pos]}  # correct_letter_wrong_location
+nots = set(c for c in 'abortfpweh')  # [letters]
 
 alphabet = string.ascii_lowercase
 
@@ -36,10 +36,11 @@ def solve(i):
     if i in known:
         test_str[i] = known[i]
         solve(i+1)
+        return
     # try every character in this index
     for c in alphabet:
         if c in nots:  # we shouldn't use this letter at all
-            return 
+            continue 
         if c in maybes: 
             not_pos = maybes[c]
             if i in not_pos:  # we know this letter should be somewhere else
