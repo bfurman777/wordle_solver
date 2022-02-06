@@ -3,16 +3,51 @@ import requests
 
 WORDLE, NERDLEGAME = 0,1
 
-# --------------------#
-GAME_MODE = NERDLEGAME
-# --------------------#
+# edit this:
+# --------------------------------------------------------#
+GAME_MODE = WORDLE
 
 # all lowercase (position is the 0-indexed index):
-known = {1:'1'}  # {position:letter}
-maybes = {'3':[0], '=':[5], '7':[6]}  # {letter:[not_pos]}  # correct_letter_wrong_location
-nots = set('+456')  # string of letters
+known = {2:'i'}  # {position:letter}
+maybes = {'l':[1]}  # {letter:[not_pos]}  # correct_letter_wrong_location
+nots = set('ave')  # string of letters
+# --------------------------------------------------------#
 
-results = []  # string outputs
+
+results = []  # global string outputs
+legal_words = None  # global wordlist for game-specific checks
+
+# different game modes need additional checks
+def wordle_verify(buf):
+    global legal_words
+    if legal_words is None:
+        ENGLISH_WORDS_LINK = 'https://raw.githubusercontent.com/dwyl/english-words/master/words.txt'
+        with requests.get(ENGLISH_WORDS_LINK) as res:
+            legal_words = set(s.lower() for s in res.text.split('\n') if len(s) == WORD_LEN)
+    if ''.join(buf) in legal_words:
+        return True
+    return False
+
+def nerdle_verify(buf):
+    if buf.count('=') != 1:
+        return False  # there has to be exaclty 1 '='
+    for i in range(len(buf)-1): # check for '//' and '**', which are valid in python but not real math
+        operators = '+-*/'
+        if buf[i] in operators and buf[i+1] in operators:
+            return False
+    try: # try for leading zeros
+        split_i = buf.index('=')
+        left, right = ''.join(buf[:split_i]), ''.join(buf[split_i+1:])
+        if eval(left) == eval(right):
+            # print(left, '     ', right)
+            return True
+    except:
+        return False
+
+additional_verify = { 
+    WORDLE: wordle_verify,
+    NERDLEGAME: nerdle_verify
+}
 
 '''
 Solve the global word 'test_str'
@@ -28,6 +63,9 @@ def solve(i, alphabet, buf):
         for c in maybes:
             if c not in buf:
                 return  # end of this DFS
+        # additional checks for the game mode
+        if not additional_verify[GAME_MODE](buf):
+            return
         results.append(''.join(buf))
         return
     # we know this index
@@ -51,46 +89,24 @@ if __name__ == '__main__':
 
     if GAME_MODE == WORDLE:
         WORD_LEN = 5
-        ENGLISH_WORDS_LINK = 'https://raw.githubusercontent.com/dwyl/english-words/master/words.txt'
-
-        with requests.get(ENGLISH_WORDS_LINK) as res:
-            all_words = set(s.lower() for s in res.text.split('\n') if len(s) == WORD_LEN)
-
         solve(i=0, alphabet=string.ascii_lowercase, buf=[None for i in range(WORD_LEN)])
-
-        actual_results = []
-        for w in results:
-            if w in all_words:
-                actual_results.append(w)
-
 
     elif GAME_MODE == NERDLEGAME:
         WORD_LEN = 8
-
         solve(i=0, alphabet='0123456789+-*/=', buf=[None for i in range(WORD_LEN)])
 
-        actual_results = []
-        for w in results:
-            if w.count('=') != 1:
-                continue  # there has to be exaclty 1 '='
-            left, right = w.split('=')
-            # check for '//' and '**', which are valid in python but not real math
-            illegal_operator = False
-            for i in range(len(w)-1):
-                if w[i] == w[i+1] and w[i] in '*/':
-                    illegal_operator = True
-            if illegal_operator: continue
-            try: # try for leading zeros
-                if eval(left) == eval(right):  # Note: false positive with '**'
-                    actual_results.append(w)
-            except: continue
-
-
-    # print results
-    print('actual results:', len(actual_results)) 
-    print(actual_results)
-
-    if (len(actual_results) == 0):
-        print('results:', len(results)) 
-        print(results)
+    print('results:', len(results)) 
+    print(results)
+    # print most vaired result
+    try:
+        best_str = results[0]
+        best_unique = set(results[0])
+        for r in results:
+            unique = set(r)
+            if len(unique) > len(best_unique):
+                best_unique = unique
+                best_str = r
+        print()
+        print(f'Most spread result: {best_str}')
+    except: pass
 
