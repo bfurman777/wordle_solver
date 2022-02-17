@@ -4,14 +4,12 @@ import time
 import requests
 import keyboard # pip3 install keyboard
 from internet import *
+import pyautogui
+from PIL import ImageGrab, Image
+from functools import partial
+ImageGrab.grab = partial(ImageGrab.grab, all_screens=True)
 
 WORDLE, NERDLEGAME = 0,1
-
-# all lowercase (position is the 0-indexed index):
-# known = {} # ex: {2:'i'}  # {position:letter}
-# maybes = {} # ex: {'l':[1]}  # {letter:[not_pos]}  # correct_letter_wrong_location
-# nots = set('') # ex: set('ave')  # string of letters
-# --------------------------------------------------------#
 
 legal_words = None  # global wordlist for game-specific checks
 
@@ -88,6 +86,15 @@ if __name__ == '__main__':
     maybes = {} # ex: {'l':[1]}  # {letter:[not_pos]}  # correct_letter_wrong_location
     nots = set('') # ex: set('ave')  # string of letters
 
+    startx = 692 # TODO add ability to change screens
+    endy = 775
+    starty = 405
+    next = 74
+    blank = (167,113,248)
+    green = (46,216,60)
+    wrong = (155,93,247)
+    yellow = (214,190,0)
+    
     game = input("Would you like to play Wordle? ")
     if game == 'y' or game == "Y" or game == 'yes' or game == 'Yes' or game == 'YES':
         GAME_MODE = WORDLE
@@ -99,8 +106,8 @@ if __name__ == '__main__':
             print('Then why the hell are you using this program?')
             exit()
 
+    print("== NEW WORD ==")
     while GAME_MODE == WORDLE: #TODO: add nerdle support
-        print("== NEW WORD ==")
         typed = ""
         restartRound = False
         while True:
@@ -132,54 +139,45 @@ if __name__ == '__main__':
                 break
         print('Word entered: ' + typed)
         if restartRound:
+            print("== NEW WORD ==")
             known = {}  
             maybes = {}
             nots = set('')
             results = []
             continue
-
-        colors = ""
-        while len(colors) < 5:
-            key = keyboard.read_key()
-            if len(key) == 1 and (key == 'g' or key == 'y' or key == 'n' or key == 'b'):
-                colors += key
-                print("received " + key)
-                time.sleep(.2)
-            if key == 'backspace':
-                colors = colors[:-1]
-                print('removed: ' + colors)
-                time.sleep(.2)
-            if key == '`':
-                restartRound = True
-                break
-        if restartRound:
-            known = {}  
-            maybes = {}
-            nots = set('')
-            results = []
-            continue
-        print('Colors entered: ' + colors)
-
-        for i in range(0,5):
-            if colors[i] == 'g':
-                known[int(i)] = typed[i]
-            if colors[i] == 'y':
-                if typed[i] in maybes:
-                    maybes[typed[i]].append(i)
-                else:
-                    maybes[typed[i]] = [i]
-            if colors[i] == 'n' or colors[i] == 'b':
-                nots.add(typed[i])
         
-        for k in known.values(): # remove knowns from maybes list
-            if k in maybes:
-                del maybes[k]
+        time.sleep(0.5)
+        WORD_LEN = 5
+
+        myScreenshot = pyautogui.screenshot()
+        myScreenshot.save('screen.png')
+        #myScreenshot = Image.open("test.png")
+        
+        for pos in range(0,6):
+            if myScreenshot.getpixel((startx, endy - pos * next)) == blank:
+                print("is blank")
+            else:
+                for i in range(0, WORD_LEN):
+                    pixel = myScreenshot.getpixel((startx + i * next, endy - pos * next))
+                    print(pixel)
+                    if pixel == green:
+                        known[int(i)] = typed[i]
+                        print("is green")
+                    if pixel == yellow:
+                        if typed[i] in maybes:
+                            maybes[typed[i]].append(i)
+                        else:
+                            maybes[typed[i]] = [i]
+                        print("is yellow")
+                    if pixel == wrong:
+                        nots.add(typed[i])
+                        print("is wrong")
+                break
 
         print(known)
         print(maybes)
         print(nots)
         
-        WORD_LEN = 5
         solve(i=0, alphabet=string.ascii_lowercase, buf=[None for i in range(WORD_LEN)], dicts=(known,maybes,nots))
         print('results:', len(results)) 
         print(results)
