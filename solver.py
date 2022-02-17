@@ -1,7 +1,8 @@
 import string
+from this import d
+import time
 import requests
-
-#import keyboard # pip3 install keyboard
+import keyboard # pip3 install keyboard
 
 WORDLE, NERDLEGAME = 0,1
 
@@ -11,8 +12,10 @@ maybes = {} # ex: {'l':[1]}  # {letter:[not_pos]}  # correct_letter_wrong_locati
 nots = set('') # ex: set('ave')  # string of letters
 # --------------------------------------------------------#
 
+
 results = []  # global string outputs
 legal_words = None  # global wordlist for game-specific checks
+
 
 # different game modes need additional checks. TODO does this support repeated letters?
 def wordle_verify(buf):
@@ -91,57 +94,87 @@ if __name__ == '__main__':
         if game == 'y' or game == "Y" or game == 'yes' or game == 'Yes' or game == 'YES':
             GAME_MODE = NERDLEGAME
         else:
-            print('Then why the hell are you using this program ?')
+            print('Then why the hell are you using this program?')
             exit()
 
-    '''
-    if GAME_MODE == WORDLE:
-        WORD_LEN = 5
-        solve(i=0, alphabet=string.ascii_lowercase, buf=[None for i in range(WORD_LEN)])
-
-    elif GAME_MODE == NERDLEGAME: #TODO: add nerdle support
-        WORD_LEN = 8
-        solve(i=0, alphabet='0123456789+-*/=', buf=[None for i in range(WORD_LEN)])
-    '''
-    while GAME_MODE == WORDLE:
-
-        posKnow = input("which letters are known (GREEN)? (These have to be comma separated, and they are 0 indexed. Ex: h0,a4 )") 
-        results = []
-        if posKnow == '`':
-            print('NEXT WORD')
-            known = {}
-            maybes = {} 
+    while GAME_MODE == WORDLE: #TODO: add nerdle support
+        print("== NEW WORD ==")
+        typed = ""
+        restartRound = False
+        while True:
+            while len(typed) < 5:
+                key = keyboard.read_key()
+                if len(key) == 1 and key.isalpha():
+                    typed += key
+                    print("received " + key)
+                    time.sleep(.2)
+                if key == 'backspace':
+                    typed = typed[:-1]
+                    print('removed: ' + typed)
+                    time.sleep(.2)
+                if key == '`':
+                    restartRound = True
+                    break
+            if restartRound:
+                break
+            key = keyboard.read_key()
+            if key == 'backspace':
+                typed = typed[:-1]
+                print('removed: ' + typed)
+                time.sleep(.2)
+                break
+            if key == 'enter':
+                break
+            if key == '`':
+                restartRound = True
+                break
+        print('Word entered: ' + typed)
+        if restartRound:
+            known = {}  
+            maybes = {}
             nots = set('')
-            legal_words = None
             continue
-        pairs = posKnow.split(",")
-        if len(posKnow) > 0:
-            for item in pairs:
-                known[int(item[1])] = item[0]
-        print(known)
-        for k in known.values():
+
+        colors = ""
+        while len(colors) < 5:
+            key = keyboard.read_key()
+            if len(key) == 1 and (key == 'g' or key == 'y' or key == 'n' or key == 'b'):
+                colors += key
+                print("received " + key)
+                time.sleep(.2)
+            if key == 'backspace':
+                colors = colors[:-1]
+                print('removed: ' + colors)
+                time.sleep(.2)
+            if key == '`':
+                restartRound = True
+                break
+        if restartRound:
+            known = {}  
+            maybes = {}
+            nots = set('')
+            continue
+        print('Colors entered: ' + colors)
+
+        for i in range(0,5):
+            if colors[i] == 'g':
+                known[int(i)] = typed[i]
+            if colors[i] == 'y':
+                if typed[i] in maybes:
+                    maybes[typed[i]].append(i)
+                else:
+                    maybes[typed[i]] = [i]
+            if colors[i] == 'n' or colors[i] == 'b':
+                nots.add(typed[i])
+        
+        for k in known.values(): # remove knowns from maybes list
             if k in maybes:
                 del maybes[k]
 
-        posKnow = input("which letters are maybes (YELLOW)? (These have to be comma separated, and they are 0 indexed. Ex: o2,p04 )") 
-        pairs = posKnow.split(",")
-        if len(posKnow) > 0:
-            for item in pairs:
-                list = []
-                for c in range(1,len(item)):
-                    list.append(int(item[c]))
-                if item[0] in maybes:
-                    maybes[item[0]] = list + maybes[item[0]]
-                else:
-                    maybes[item[0]] = list 
+        print(known)
         print(maybes)
-        
-        posKnow = input("which letters are not used (GRAY)? (These don't have to be comma separated. Ex: akl )") 
-        if len(posKnow) > 0:
-            for item in posKnow:
-                nots.add(item)
         print(nots)
-
+        
         WORD_LEN = 5
         solve(i=0, alphabet=string.ascii_lowercase, buf=[None for i in range(WORD_LEN)])
         print('results:', len(results)) 
