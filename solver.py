@@ -11,6 +11,7 @@ from functools import partial
 ImageGrab.grab = partial(ImageGrab.grab, all_screens=True)
 
 WORDLE, NERDLEGAME, SQUABBLE = 0,1,2
+BOT, PERSON = 0,1
 
 legal_words = None  # global wordlist for game-specific checks
 
@@ -162,6 +163,7 @@ def solve(i, alphabet, buf, dicts):
         solve(i+1, alphabet, buf, dicts)
 
 if __name__ == '__main__':
+    PLAYER = -1
     results = []
     known = {} # ex: {2:'i'}  # {position:letter}
     maybes = {} # ex: {'l':[1]}  # {letter:[not_pos]}  # correct_letter_wrong_location
@@ -176,11 +178,25 @@ if __name__ == '__main__':
     wrong = (155,93,247)
     yellow = (214,190,0)
     grid = (130,53,245)
-    firstGuess = 'audio'
+    firstGuess = 'crane'
     
+    game = input("reset Grid? ")
+    if game == 'y' or game == "Y" or game == 'yes' or game == 'Yes' or game == 'YES':
+        startx, starty, next, gridSpace = detectGrid(blank,grid)
+        endy = starty + 5*(next + gridSpace)
+        print("New Grid: ")
+        print(startx)
+        print(endy)
+        print(next)
+        print(gridSpace)
+        next = next + gridSpace
+
     game = input("Would you like to play Squable? ")
     if game == 'y' or game == "Y" or game == 'yes' or game == 'Yes' or game == 'YES':
         GAME_MODE = SQUABBLE
+        game = input("Do you want the bot to play for you? ")
+        if game == 'y' or game == "Y" or game == 'yes' or game == 'Yes' or game == 'YES':
+            PLAYER = BOT
     else:
         game = input("Would you like to play Wordle? ")
         if game == 'y' or game == "Y" or game == 'yes' or game == 'Yes' or game == 'YES':
@@ -193,21 +209,13 @@ if __name__ == '__main__':
                 print('Then why the hell are you using this program?')
                 exit()
 
-    game = input("reset Grid? ")
-    if game == 'y' or game == "Y" or game == 'yes' or game == 'Yes' or game == 'YES':
-        startx, starty, next, gridSpace = detectGrid(blank,grid)
-        endy = starty + 5*(next + gridSpace)
-        print("New Grid: ")
-        print(startx)
-        print(endy)
-        print(next)
-        print(gridSpace)
-        next = next + gridSpace
-
+    time.sleep(1)
     print("== NEW WORD ==")
-    myguess = ''
+    
     #pyautogui.press('w')
     guessCount = 0
+    myguess = ""
+    guesses = []
     while GAME_MODE == SQUABBLE: #TODO: add nerdle and wordle support
         
         typed = ""
@@ -215,42 +223,57 @@ if __name__ == '__main__':
         
         validWord = False
         while not validWord:
-            while True:
-                while len(typed) < 5:
+            if PLAYER == PERSON:
+                while True:
+                    while len(typed) < 5:
+                        key = keyboard.read_key()
+                        if len(key) == 1 and key.isalpha():
+                            typed += key
+                            print("received " + key)
+                            time.sleep(.2)
+                        if key == 'backspace':
+                            typed = typed[:-1]
+                            print('removed: ' + typed)
+                            time.sleep(.2)
+                        if key == '`':
+                            restartRound = True
+                            break
+                    if restartRound:
+                        break
                     key = keyboard.read_key()
-                    if len(key) == 1 and key.isalpha():
-                        typed += key
-                        print("received " + key)
-                        time.sleep(.2)
                     if key == 'backspace':
                         typed = typed[:-1]
                         print('removed: ' + typed)
                         time.sleep(.2)
+                        break
+                    if key == 'enter':
+                        break
                     if key == '`':
                         restartRound = True
                         break
-                if restartRound:
-                    break
-                key = keyboard.read_key()
-                if key == 'backspace':
-                    typed = typed[:-1]
-                    print('removed: ' + typed)
-                    time.sleep(.2)
-                    break
-                if key == 'enter':
-                    break
-                if key == '`':
-                    restartRound = True
-                    break
+            elif PLAYER == BOT:
+                if guessCount == 0:
+                    typed = firstGuess
+                else:
+                    typed = myguess
+                for l in typed:
+                    pyautogui.press(l)
+                pyautogui.press('enter')
+
             print('Word entered: ' + typed)
             # detect if word went through
             time.sleep(.2)
             myScreenshot = pyautogui.screenshot()
             myScreenshot.save('afterGuess.png')
             print("guess " + str(guessCount))
-            print( endy - (5 - guessCount) * next)
+            #print( endy - (5 - guessCount) * next)
 
             if restartRound:
+                break
+            elif PLAYER == BOT and myScreenshot.getpixel((startx, endy - (5 ) * next)) == blank and myScreenshot.getpixel((startx + next, endy - (5 ) * next)) == blank and \
+                myScreenshot.getpixel((startx + 2*next, endy - (5 ) * next)) == blank and myScreenshot.getpixel((startx + 3*next, endy - (5 ) * next)) == blank and \
+                myScreenshot.getpixel((startx + 4*next, endy - (5 ) * next)):
+                print("NEXT WORD!")
                 break
             elif myScreenshot.getpixel((startx, endy - (5 - guessCount) * next)) == blank and myScreenshot.getpixel((startx + next, endy - (5 - guessCount) * next)) == blank and \
                 myScreenshot.getpixel((startx + 2*next, endy - (5 - guessCount) * next)) == blank and myScreenshot.getpixel((startx + 3*next, endy - (5 - guessCount) * next)) == blank and \
@@ -261,7 +284,12 @@ if __name__ == '__main__':
                 pyautogui.press('backspace')
                 pyautogui.press('backspace')
                 pyautogui.press('backspace')
+                if typed in guesses:
+                    guesses.remove(typed)
+                if typed in legal_words:
+                    legal_words.remove(typed)
                 typed = ""
+                myguess = guesses[0]
             else:
                 validWord = True
                 guessCount = guessCount + 1
@@ -288,6 +316,9 @@ if __name__ == '__main__':
         for pos in range(0,6):
             if myScreenshot.getpixel((startx, endy - pos * next)) == blank:
                 print("is blank")
+                if (5 - pos) < guessCount:
+                    restartRound = True
+                    break
             else:
                 for i in range(0, WORD_LEN):
                     pixel = myScreenshot.getpixel((startx + i * next, endy - pos * next))
@@ -305,6 +336,15 @@ if __name__ == '__main__':
                         nots.add(typed[i])
                         print("is wrong")
                 break
+        
+        if restartRound:
+            print("== NEW WORD ==")
+            guessCount = 0
+            known = {}  
+            maybes = {}
+            nots = set('')
+            results = []
+            continue
 
         print(known)
         print(maybes)
@@ -312,6 +352,7 @@ if __name__ == '__main__':
         
         solve(i=0, alphabet=string.ascii_lowercase, buf=[None for i in range(WORD_LEN)], dicts=(known,maybes,nots))
         print('results:', len(results)) 
+        guesses = results
         print(results)
         # print most vaired result
         try:
@@ -324,5 +365,6 @@ if __name__ == '__main__':
                     best_str = r
             print()
             print(f'Most spread result: {best_str}')
+            myguess = best_str
         except: pass
         results = []
