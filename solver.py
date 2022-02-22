@@ -199,7 +199,7 @@ if __name__ == '__main__':
 
             print('Word entered: ' + typed)
             # detect if word went through
-            time.sleep(.1)
+            time.sleep(.2)
             myScreenshot = pyautogui.screenshot()
             myScreenshot.save('afterGuess.png')
             #print("guess " + str(guessCount))
