@@ -5,11 +5,12 @@ import requests
 import keyboard # pip3 install keyboard
 from internet import *
 import pyautogui
+import math
 from PIL import ImageGrab, Image
 from functools import partial
 ImageGrab.grab = partial(ImageGrab.grab, all_screens=True)
 
-WORDLE, NERDLEGAME = 0,1
+WORDLE, NERDLEGAME, SQUABBLE = 0,1,2
 
 legal_words = None  # global wordlist for game-specific checks
 
@@ -40,8 +41,88 @@ def nerdle_verify(buf):
 
 additional_verify = { 
     WORDLE: wordle_verify,
-    NERDLEGAME: nerdle_verify
+    NERDLEGAME: nerdle_verify,
+    SQUABBLE: wordle_verify
 }
+
+
+def detectGrid(emptyColor,gridColor):
+    '''
+    print("Place mouse in top left corner of all screens and press ` (button above Tab)") # scale to screenshot
+    absolutetop = ()
+    top = ()
+    bottom = ()
+    while True:
+        key = keyboard.read_key()
+        if key == '`':
+            absolutetop = pyautogui.position()
+            print(absolutetop)
+            break
+    time.sleep(.5)
+    print("Place mouse in top left corner of grid and press ` (button above Tab)")
+    while True:
+        key = keyboard.read_key()
+        if key == '`':
+            top = pyautogui.position()
+            print(top)
+            break
+    time.sleep(.5)
+    print("Place mouse in bottom right corner of grid and press ` (button above Tab)")
+    while True:
+        key = keyboard.read_key()
+        if key == '`':
+            bottom = pyautogui.position()
+            print(bottom)
+            break
+
+    x = top[0] - absolutetop[0]
+    return x, top[1], (bottom[0] - absolutetop[0] - x) / 4, (bottom[1] - top[1]) / 5
+    '''
+    myScreenshot = pyautogui.screenshot()
+    
+    width, height = myScreenshot.size
+  
+    for i in range(0,width):
+        for j in range(0,height):
+            vals = myScreenshot.getpixel((i,j))
+            diff = math.sqrt(math.pow(emptyColor[0],2)+math.pow(emptyColor[1],2)+math.pow(emptyColor[2],2))
+            if abs(math.sqrt(math.pow(vals[0],2)+math.pow(vals[1],2)+math.pow(vals[2],2)) - diff) < 8:
+                print("AT " + str(i) + " j: " + str(j))
+                counter = 1
+                while myScreenshot.getpixel((i + counter,j)) == emptyColor:
+                    counter = counter + 1
+                if counter == 1:
+                    continue
+                print("counter: " + str(counter))
+                grid = 1
+                while myScreenshot.getpixel((i + counter + grid,j)) != emptyColor:
+                    grid = grid + 1
+                print("grid: " + str(grid))
+                if grid == 1:
+                    continue
+                print("NOT A FAIL")
+                print(myScreenshot.getpixel((i + int(3 * counter / 2 + grid),j)) == emptyColor)
+
+                if myScreenshot.getpixel((i + int(3 * counter / 2 + grid),j)) == emptyColor and myScreenshot.getpixel((i + 2 * counter + int(3 * grid / 2),j)) == gridColor and \
+                   myScreenshot.getpixel((i + int(5 * counter / 2 + 2 * grid),j)) == emptyColor and myScreenshot.getpixel((i + 3 * counter + int(5 * grid / 2),j)) == gridColor and \
+                   myScreenshot.getpixel((i + int(7 * counter / 2 + 3 * grid),j)) == emptyColor and myScreenshot.getpixel((i + 4 * counter + int(7 * grid / 2),j)) == gridColor and \
+                   myScreenshot.getpixel((i + int(9 * counter / 2 + 4 * grid),j)) == emptyColor and myScreenshot.getpixel((i + 5 * counter + int(9 * grid / 2),j)) == gridColor:
+                    myScreenshot.putpixel((i , j), (255, 0, 0))
+                    myScreenshot.putpixel((i + int(counter / 2), j), (255, 0, 0))
+                    myScreenshot.putpixel((i+ int(3 * counter / 2 + grid), j), (255, 0, 0))
+                    myScreenshot.putpixel((i+ int(5 * counter / 2 + 2*grid), j), (255, 0, 0))
+                    myScreenshot.putpixel((i+ int(7 * counter / 2 + 3*grid), j), (255, 0, 0))
+                    myScreenshot.putpixel((i+ int(9 * counter / 2 + 4*grid), j), (255, 0, 0))
+                    myScreenshot.putpixel((i+ int(counter / 2) , j + counter + grid), (255, 0, 0))
+                    myScreenshot.putpixel((i+ int(counter / 2) , j + 2*(counter + grid)), (255, 0, 0))
+                    myScreenshot.putpixel((i+ int(counter / 2) , j + 3*(counter + grid)), (255, 0, 0))
+                    myScreenshot.putpixel((i+ int(counter / 2) , j + 4*(counter + grid)), (255, 0, 0))
+                    myScreenshot.putpixel((i+ int(counter / 2) , j + 5*(counter + grid)), (255, 0, 0))
+                    myScreenshot.save('grid.png')
+                    return i + int(counter / 2), j, counter, grid
+    myScreenshot.save('grid.png')             
+    return -1,-1,-1,-1
+    
 
 '''
 Solve the global word 'test_str'
@@ -87,59 +168,108 @@ if __name__ == '__main__':
     nots = set('') # ex: set('ave')  # string of letters
 
     startx = 692 # TODO add ability to change screens
-    endy = 775
-    starty = 405
-    next = 74
+    endy = 777
+    starty = 404
+    next = 75
     blank = (167,113,248)
     green = (46,216,60)
     wrong = (155,93,247)
     yellow = (214,190,0)
+    grid = (130,53,245)
+    firstGuess = 'audio'
     
-    game = input("Would you like to play Wordle? ")
+    game = input("Would you like to play Squable? ")
     if game == 'y' or game == "Y" or game == 'yes' or game == 'Yes' or game == 'YES':
-        GAME_MODE = WORDLE
+        GAME_MODE = SQUABBLE
     else:
-        game = input("Would you like to play Nerdle? ")
+        game = input("Would you like to play Wordle? ")
         if game == 'y' or game == "Y" or game == 'yes' or game == 'Yes' or game == 'YES':
-            GAME_MODE = NERDLEGAME
+            GAME_MODE = WORDLE
         else:
-            print('Then why the hell are you using this program?')
-            exit()
+            game = input("Would you like to play Nerdle? ")
+            if game == 'y' or game == "Y" or game == 'yes' or game == 'Yes' or game == 'YES':
+                GAME_MODE = NERDLEGAME
+            else:
+                print('Then why the hell are you using this program?')
+                exit()
+
+    game = input("reset Grid? ")
+    if game == 'y' or game == "Y" or game == 'yes' or game == 'Yes' or game == 'YES':
+        startx, starty, next, gridSpace = detectGrid(blank,grid)
+        endy = starty + 5*(next + gridSpace)
+        print("New Grid: ")
+        print(startx)
+        print(endy)
+        print(next)
+        print(gridSpace)
+        next = next + gridSpace
 
     print("== NEW WORD ==")
-    while GAME_MODE == WORDLE: #TODO: add nerdle support
+    myguess = ''
+    #pyautogui.press('w')
+    guessCount = 0
+    while GAME_MODE == SQUABBLE: #TODO: add nerdle and wordle support
+        
         typed = ""
         restartRound = False
-        while True:
-            while len(typed) < 5:
+        
+        validWord = False
+        while not validWord:
+            while True:
+                while len(typed) < 5:
+                    key = keyboard.read_key()
+                    if len(key) == 1 and key.isalpha():
+                        typed += key
+                        print("received " + key)
+                        time.sleep(.2)
+                    if key == 'backspace':
+                        typed = typed[:-1]
+                        print('removed: ' + typed)
+                        time.sleep(.2)
+                    if key == '`':
+                        restartRound = True
+                        break
+                if restartRound:
+                    break
                 key = keyboard.read_key()
-                if len(key) == 1 and key.isalpha():
-                    typed += key
-                    print("received " + key)
-                    time.sleep(.2)
                 if key == 'backspace':
                     typed = typed[:-1]
                     print('removed: ' + typed)
                     time.sleep(.2)
+                    break
+                if key == 'enter':
+                    break
                 if key == '`':
                     restartRound = True
                     break
+            print('Word entered: ' + typed)
+            # detect if word went through
+            time.sleep(.2)
+            myScreenshot = pyautogui.screenshot()
+            myScreenshot.save('afterGuess.png')
+            print("guess " + str(guessCount))
+            print( endy - (5 - guessCount) * next)
+
             if restartRound:
                 break
-            key = keyboard.read_key()
-            if key == 'backspace':
-                typed = typed[:-1]
-                print('removed: ' + typed)
-                time.sleep(.2)
-                break
-            if key == 'enter':
-                break
-            if key == '`':
-                restartRound = True
-                break
-        print('Word entered: ' + typed)
+            elif myScreenshot.getpixel((startx, endy - (5 - guessCount) * next)) == blank and myScreenshot.getpixel((startx + next, endy - (5 - guessCount) * next)) == blank and \
+                myScreenshot.getpixel((startx + 2*next, endy - (5 - guessCount) * next)) == blank and myScreenshot.getpixel((startx + 3*next, endy - (5 - guessCount) * next)) == blank and \
+                myScreenshot.getpixel((startx + 4*next, endy - (5 - guessCount) * next)):
+                print("WORD DOES NOT EXIST TRY ANOTHER GUESS!")
+                pyautogui.press('backspace')
+                pyautogui.press('backspace')
+                pyautogui.press('backspace')
+                pyautogui.press('backspace')
+                pyautogui.press('backspace')
+                typed = ""
+            else:
+                validWord = True
+                guessCount = guessCount + 1
+
+        
         if restartRound:
             print("== NEW WORD ==")
+            guessCount = 0
             known = {}  
             maybes = {}
             nots = set('')
@@ -152,6 +282,8 @@ if __name__ == '__main__':
         myScreenshot = pyautogui.screenshot()
         myScreenshot.save('screen.png')
         #myScreenshot = Image.open("test.png")
+
+        #TODO: detect on which screen and the resolution, better key release events
         
         for pos in range(0,6):
             if myScreenshot.getpixel((startx, endy - pos * next)) == blank:
