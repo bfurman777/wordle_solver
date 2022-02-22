@@ -5,6 +5,7 @@ import requests
 import keyboard # pip3 install keyboard
 from internet import *
 import pyautogui
+from tries import *
 import math
 from PIL import ImageGrab, Image
 from functools import partial
@@ -48,37 +49,6 @@ additional_verify = {
 
 
 def detectGrid(emptyColor,gridColor):
-    '''
-    print("Place mouse in top left corner of all screens and press ` (button above Tab)") # scale to screenshot
-    absolutetop = ()
-    top = ()
-    bottom = ()
-    while True:
-        key = keyboard.read_key()
-        if key == '`':
-            absolutetop = pyautogui.position()
-            print(absolutetop)
-            break
-    time.sleep(.5)
-    print("Place mouse in top left corner of grid and press ` (button above Tab)")
-    while True:
-        key = keyboard.read_key()
-        if key == '`':
-            top = pyautogui.position()
-            print(top)
-            break
-    time.sleep(.5)
-    print("Place mouse in bottom right corner of grid and press ` (button above Tab)")
-    while True:
-        key = keyboard.read_key()
-        if key == '`':
-            bottom = pyautogui.position()
-            print(bottom)
-            break
-
-    x = top[0] - absolutetop[0]
-    return x, top[1], (bottom[0] - absolutetop[0] - x) / 4, (bottom[1] - top[1]) / 5
-    '''
     myScreenshot = pyautogui.screenshot()
     
     width, height = myScreenshot.size
@@ -124,47 +94,8 @@ def detectGrid(emptyColor,gridColor):
     myScreenshot.save('grid.png')             
     return -1,-1,-1,-1
     
-
-'''
-Solve the global word 'test_str'
-@param i: current index we are checking
-@param alphabet: string of valid characters to be in the result
-@param buf: array of character of the length of the result
-@return None: a list of solutions wi`ll be in the global results array
-'''
-def solve(i, alphabet, buf, dicts):
-    known, maybes, nots = dicts
-    # end case, we have a word canditate
-    if i == len(buf):
-        # check that we aquired all chars from correct_letter_wrong_location
-        for c in maybes:
-            if c not in buf:
-                return  # end of this DFS
-        # additional checks for the game mode
-        if not additional_verify[GAME_MODE](buf):
-            return
-        results.append(''.join(buf))
-        return
-    # we know this index
-    if i in known:
-        buf[i] = known[i]
-        solve(i+1, alphabet, buf, dicts)
-        return
-    # try every character in this index
-    for c in alphabet:
-        if c in nots:  # we shouldn't use this letter at all
-            continue 
-        if c in maybes: 
-            not_pos = maybes[c]
-            if i in not_pos:  # we know this letter should be somewhere else
-                continue
-         # dfs down this path
-        buf[i] = c
-        solve(i+1, alphabet, buf, dicts)
-
 if __name__ == '__main__':
     PLAYER = -1
-    results = []
     known = {} # ex: {2:'i'}  # {position:letter}
     maybes = {} # ex: {'l':[1]}  # {letter:[not_pos]}  # correct_letter_wrong_location
     nots = set('') # ex: set('ave')  # string of letters
@@ -184,11 +115,11 @@ if __name__ == '__main__':
     if game == 'y' or game == "Y" or game == 'yes' or game == 'Yes' or game == 'YES':
         startx, starty, next, gridSpace = detectGrid(blank,grid)
         endy = starty + 5*(next + gridSpace)
-        print("New Grid: ")
+        '''print("New Grid: ")
         print(startx)
         print(endy)
         print(next)
-        print(gridSpace)
+        print(gridSpace)'''
         next = next + gridSpace
 
     game = input("Would you like to play Squable? ")
@@ -215,7 +146,14 @@ if __name__ == '__main__':
     #pyautogui.press('w')
     guessCount = 0
     myguess = ""
-    guesses = []
+    tree = tri(firstGuess)
+    myList = WORDLE_ANSWER_SET
+    for i in myList:
+        tree.insert(i, 0.1)
+    myList = WORDLE_GUESS_SET
+    for i in myList:
+        tree.insert(i, 0)
+
     while GAME_MODE == SQUABBLE: #TODO: add nerdle and wordle support
         
         typed = ""
@@ -252,17 +190,15 @@ if __name__ == '__main__':
                         restartRound = True
                         break
             elif PLAYER == BOT:
-                if guessCount == 0:
-                    typed = firstGuess
-                else:
-                    typed = myguess
+                typed = tree.recursiveFind(tree.head, 0, "", tree.notLocated)[1]
+                print(typed)
                 for l in typed:
                     pyautogui.press(l)
                 pyautogui.press('enter')
 
             print('Word entered: ' + typed)
             # detect if word went through
-            time.sleep(.2)
+            time.sleep(.1)
             myScreenshot = pyautogui.screenshot()
             myScreenshot.save('afterGuess.png')
             print("guess " + str(guessCount))
@@ -272,8 +208,9 @@ if __name__ == '__main__':
                 break
             elif PLAYER == BOT and myScreenshot.getpixel((startx, endy - (5 ) * next)) == blank and myScreenshot.getpixel((startx + next, endy - (5 ) * next)) == blank and \
                 myScreenshot.getpixel((startx + 2*next, endy - (5 ) * next)) == blank and myScreenshot.getpixel((startx + 3*next, endy - (5 ) * next)) == blank and \
-                myScreenshot.getpixel((startx + 4*next, endy - (5 ) * next)):
+                myScreenshot.getpixel((startx + 4*next, endy - (5 ) * next)) == blank:
                 print("NEXT WORD!")
+                restartRound = True
                 break
             elif myScreenshot.getpixel((startx, endy - (5 - guessCount) * next)) == blank and myScreenshot.getpixel((startx + next, endy - (5 - guessCount) * next)) == blank and \
                 myScreenshot.getpixel((startx + 2*next, endy - (5 - guessCount) * next)) == blank and myScreenshot.getpixel((startx + 3*next, endy - (5 - guessCount) * next)) == blank and \
@@ -284,12 +221,8 @@ if __name__ == '__main__':
                 pyautogui.press('backspace')
                 pyautogui.press('backspace')
                 pyautogui.press('backspace')
-                if typed in guesses:
-                    guesses.remove(typed)
-                if typed in legal_words:
-                    legal_words.remove(typed)
-                typed = ""
-                myguess = guesses[0]
+                tree.findAWordNoInput( typed, ['s'])
+                typed = tree.recursiveFind(tree.head, 0, "", tree.notLocated)[1]
             else:
                 validWord = True
                 guessCount = guessCount + 1
@@ -298,13 +231,11 @@ if __name__ == '__main__':
         if restartRound:
             print("== NEW WORD ==")
             guessCount = 0
-            known = {}  
-            maybes = {}
-            nots = set('')
-            results = []
+            tree.findAWordNoInput( typed, ['q'])
+            typed = ""
             continue
         
-        time.sleep(0.5)
+        time.sleep(0.1)
         WORD_LEN = 5
 
         myScreenshot = pyautogui.screenshot()
@@ -312,59 +243,37 @@ if __name__ == '__main__':
         #myScreenshot = Image.open("test.png")
 
         #TODO: detect on which screen and the resolution, better key release events
-        
+        colors = []
         for pos in range(0,6):
             if myScreenshot.getpixel((startx, endy - pos * next)) == blank:
                 print("is blank")
-                if (5 - pos) < guessCount:
+                if pos == 5 and guessCount != 0:
                     restartRound = True
                     break
             else:
                 for i in range(0, WORD_LEN):
                     pixel = myScreenshot.getpixel((startx + i * next, endy - pos * next))
-                    print(pixel)
+                    #print(pixel)
                     if pixel == green:
-                        known[int(i)] = typed[i]
+                        colors.append("G")
                         print("is green")
                     if pixel == yellow:
-                        if typed[i] in maybes:
-                            maybes[typed[i]].append(i)
-                        else:
-                            maybes[typed[i]] = [i]
+                        colors.append("Y")
                         print("is yellow")
                     if pixel == wrong:
-                        nots.add(typed[i])
+                        colors.append("B")
                         print("is wrong")
                 break
-        
-        if restartRound:
+        print(colors)
+
+        if restartRound or colors == ['G','G','G','G','G']:
             print("== NEW WORD ==")
+            time.sleep(0.2)
+            tree.findAWordNoInput( typed, ['q'])
             guessCount = 0
-            known = {}  
-            maybes = {}
-            nots = set('')
-            results = []
+            typed = ""
             continue
 
-        print(known)
-        print(maybes)
-        print(nots)
+        tree.findAWordNoInput( typed, colors)
+
         
-        solve(i=0, alphabet=string.ascii_lowercase, buf=[None for i in range(WORD_LEN)], dicts=(known,maybes,nots))
-        print('results:', len(results)) 
-        guesses = results
-        print(results)
-        # print most vaired result
-        try:
-            best_str = results[0]
-            best_unique = set(results[0])
-            for r in results:
-                unique = set(r)
-                if len(unique) > len(best_unique):
-                    best_unique = unique
-                    best_str = r
-            print()
-            print(f'Most spread result: {best_str}')
-            myguess = best_str
-        except: pass
-        results = []
