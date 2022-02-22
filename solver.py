@@ -1,18 +1,16 @@
-import string
-from this import d
 import time
-import requests
 import keyboard # pip3 install keyboard
 from internet import *
 import pyautogui
 from tries import *
 import math
-from PIL import ImageGrab, Image
+from PIL import ImageGrab
 from functools import partial
 ImageGrab.grab = partial(ImageGrab.grab, all_screens=True)
 
 WORDLE, NERDLEGAME, SQUABBLE = 0,1,2
 BOT, PERSON = 0,1
+pyautogui.PAUSE = 0.01
 
 legal_words = None  # global wordlist for game-specific checks
 
@@ -58,21 +56,21 @@ def detectGrid(emptyColor,gridColor):
             vals = myScreenshot.getpixel((i,j))
             diff = math.sqrt(math.pow(emptyColor[0],2)+math.pow(emptyColor[1],2)+math.pow(emptyColor[2],2))
             if abs(math.sqrt(math.pow(vals[0],2)+math.pow(vals[1],2)+math.pow(vals[2],2)) - diff) < 8:
-                print("AT " + str(i) + " j: " + str(j))
+                #print("AT " + str(i) + " j: " + str(j))
                 counter = 1
                 while myScreenshot.getpixel((i + counter,j)) == emptyColor:
                     counter = counter + 1
                 if counter == 1:
                     continue
-                print("counter: " + str(counter))
+                #print("counter: " + str(counter))
                 grid = 1
                 while myScreenshot.getpixel((i + counter + grid,j)) != emptyColor:
                     grid = grid + 1
-                print("grid: " + str(grid))
+                #print("grid: " + str(grid))
                 if grid == 1:
                     continue
-                print("NOT A FAIL")
-                print(myScreenshot.getpixel((i + int(3 * counter / 2 + grid),j)) == emptyColor)
+                print("GRID FOUND")
+                #print(myScreenshot.getpixel((i + int(3 * counter / 2 + grid),j)) == emptyColor)
 
                 if myScreenshot.getpixel((i + int(3 * counter / 2 + grid),j)) == emptyColor and myScreenshot.getpixel((i + 2 * counter + int(3 * grid / 2),j)) == gridColor and \
                    myScreenshot.getpixel((i + int(5 * counter / 2 + 2 * grid),j)) == emptyColor and myScreenshot.getpixel((i + 3 * counter + int(5 * grid / 2),j)) == gridColor and \
@@ -100,10 +98,13 @@ if __name__ == '__main__':
     maybes = {} # ex: {'l':[1]}  # {letter:[not_pos]}  # correct_letter_wrong_location
     nots = set('') # ex: set('ave')  # string of letters
 
-    startx = 692 # TODO add ability to change screens
+    #################### IMPORTANT GRID VARIABLES #####################################
+    startx = 692 
     endy = 777
-    starty = 404
     next = 75
+    ###################################################################################
+
+    starty = 404
     blank = (167,113,248)
     green = (46,216,60)
     wrong = (155,93,247)
@@ -115,12 +116,13 @@ if __name__ == '__main__':
     if game == 'y' or game == "Y" or game == 'yes' or game == 'Yes' or game == 'YES':
         startx, starty, next, gridSpace = detectGrid(blank,grid)
         endy = starty + 5*(next + gridSpace)
-        '''print("New Grid: ")
-        print(startx)
-        print(endy)
-        print(next)
-        print(gridSpace)'''
+        print("You only need to run this once as long as you play Squabble on the same screen in the same resolution. Copy the values shown below in solver.py on line 101.")
+        print("New Grid: ")
+        print("startx: " + str(startx))
+        print("endy: " + str(endy))
+        #print(gridSpace)
         next = next + gridSpace
+        print("next: " + str(next))
 
     game = input("Would you like to play Squable? ")
     if game == 'y' or game == "Y" or game == 'yes' or game == 'Yes' or game == 'YES':
@@ -143,7 +145,6 @@ if __name__ == '__main__':
     time.sleep(1)
     print("== NEW WORD ==")
     
-    #pyautogui.press('w')
     guessCount = 0
     myguess = ""
     tree = tri(firstGuess)
@@ -191,7 +192,7 @@ if __name__ == '__main__':
                         break
             elif PLAYER == BOT:
                 typed = tree.recursiveFind(tree.head, 0, "", tree.notLocated)[1]
-                print(typed)
+                #print(typed)
                 for l in typed:
                     pyautogui.press(l)
                 pyautogui.press('enter')
@@ -201,7 +202,7 @@ if __name__ == '__main__':
             time.sleep(.1)
             myScreenshot = pyautogui.screenshot()
             myScreenshot.save('afterGuess.png')
-            print("guess " + str(guessCount))
+            #print("guess " + str(guessCount))
             #print( endy - (5 - guessCount) * next)
 
             if restartRound:
@@ -246,7 +247,7 @@ if __name__ == '__main__':
         colors = []
         for pos in range(0,6):
             if myScreenshot.getpixel((startx, endy - pos * next)) == blank:
-                print("is blank")
+                #print("is blank")
                 if pos == 5 and guessCount != 0:
                     restartRound = True
                     break
@@ -256,19 +257,19 @@ if __name__ == '__main__':
                     #print(pixel)
                     if pixel == green:
                         colors.append("G")
-                        print("is green")
+                        #print("is green")
                     if pixel == yellow:
                         colors.append("Y")
-                        print("is yellow")
+                        #print("is yellow")
                     if pixel == wrong:
                         colors.append("B")
-                        print("is wrong")
+                        #print("is wrong")
                 break
-        print(colors)
+        #print(colors)
 
         if restartRound or colors == ['G','G','G','G','G']:
             print("== NEW WORD ==")
-            time.sleep(0.2)
+            time.sleep(0.3)
             tree.findAWordNoInput( typed, ['q'])
             guessCount = 0
             typed = ""

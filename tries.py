@@ -81,7 +81,7 @@ class tri:
 
     def findAWord(self):
         word =  self.recursiveFind(self.head, 0, "", self.notLocated)[1]
-        print("try " + word)
+        #print("try " + word)
         self.notLocated = set()        
         for level, c in enumerate(word):
 
@@ -118,18 +118,18 @@ class tri:
         return False
 
     def findAWordNoInput(self, word, arr):
-        print(word)
-        print(arr)
+        #print(word)
+        #print(arr)
         self.notLocated = set()   
         for level, c in enumerate(word):
             val = arr[level]         
             if val == "G":
                 self.levelArray[level] = c
-                print(val, "G")
+                #print(val, "G")
             elif val == "B":
                 if c not in self.notLocated:
                     self.notCorrect.add(c)
-                print(val, "B")
+                #print(val, "B")
             elif val == "s":
                 self.doNotUse.add(word)
                 return False
@@ -148,5 +148,5 @@ class tri:
             else:
                 self.notAtLevel[level].add(c)
                 self.notLocated.add(c)
-                print(val, "Y")
+                #print(val, "Y")
         return False
