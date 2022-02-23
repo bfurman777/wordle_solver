@@ -1,4 +1,4 @@
-# === Squabble Bot ===
+# Squabble Bot 
 
 ## Prerequisites
 
@@ -24,7 +24,7 @@ If you are using this on windows, running any of this code on WSL will NOT work.
 
 3. You should see "reset Grid?" pop up. If you are running this for the first time read the next steps so you can understand what to do. It is recommended that you press 'y' in order for the program to recognize where should it look for the squabble grid on screen, but do not press 'y' just yet
 
-4. In order to get an accurate grid position, you need to start a squabble game somewhere on your computer. When the grid is visible, go back to the powershell, press 'y' then enter. The program will take a screenshot and then it will look for the grid. If everything worked properly, you should see a "GRID FOUND" message along with 3 values: startx, endy, and next. Go ahead and copy these values in solver.py line 101
+4. In order to get an accurate grid position, you need to start a squabble game somewhere on your computer. When the grid is visible, go back to the powershell, press 'y' then enter. Place your mouse anywhere on the browser that has squabble, and click on '`' (button above Tab). This will have the program memorize that location and use it to focus on squabble. Next, the program will take a screenshot and then it will look for the grid. If everything worked properly, you should see a "GRID FOUND" message along with 3 values: startx, endy, and next. These values will be stored in grid.txt and will be used from now on
 
 5. To check whether the grid was found correctly, go into the folder that contains all the code and look for a "grid.png". This will show you the screenshot with some red dots of where the program thinks the grid is. It should look something like this:![grid2](C:\Users\ivartic\Desktop\ilieMAKE_BackUp\squable\wordle_solver\grid2.png)
 

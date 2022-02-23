@@ -47,6 +47,14 @@ additional_verify = {
 
 
 def detectGrid(emptyColor,gridColor):
+    print("Place mouse on the screen that has the game, and press ` (button above Tab)") # scale to screenshot
+    mousePosition = ()
+    while True:
+        key = keyboard.read_key()
+        if key == '`':
+            mousePosition = pyautogui.position()
+            #print(mousePosition)
+            break
     myScreenshot = pyautogui.screenshot()
     
     width, height = myScreenshot.size
@@ -88,7 +96,14 @@ def detectGrid(emptyColor,gridColor):
                     myScreenshot.putpixel((i+ int(counter / 2) , j + 4*(counter + grid)), (255, 0, 0))
                     myScreenshot.putpixel((i+ int(counter / 2) , j + 5*(counter + grid)), (255, 0, 0))
                     myScreenshot.save('grid.png')
-                    return i + int(counter / 2), j, counter, grid
+                    with open('grid.txt','w') as f:
+                        f.write(str(i + int(counter / 2)) + '\n')
+                        f.write(str(j + 5*(counter + grid)) + '\n')
+                        f.write(str(counter + grid) + '\n')
+                        f.write(str(mousePosition[0]) + '\n')
+                        f.write(str(mousePosition[1]) + '\n')
+
+                    return i + int(counter / 2), j, counter, grid, mousePosition[0], mousePosition[1]
     myScreenshot.save('grid.png')             
     return -1,-1,-1,-1
     
@@ -98,12 +113,12 @@ if __name__ == '__main__':
     maybes = {} # ex: {'l':[1]}  # {letter:[not_pos]}  # correct_letter_wrong_location
     nots = set('') # ex: set('ave')  # string of letters
 
-    #################### IMPORTANT GRID VARIABLES #####################################
     startx = 692 
     endy = 777
     next = 75
-    ###################################################################################
 
+    MOUSEX = 0
+    MOUSEY = 0
     starty = 404
     blank = (167,113,248)
     green = (46,216,60)
@@ -114,15 +129,24 @@ if __name__ == '__main__':
     
     game = input("reset Grid? ")
     if game == 'y' or game == "Y" or game == 'yes' or game == 'Yes' or game == 'YES':
-        startx, starty, next, gridSpace = detectGrid(blank,grid)
+        startx, starty, next, gridSpace, MOUSEX, MOUSEY = detectGrid(blank,grid)
         endy = starty + 5*(next + gridSpace)
-        print("You only need to run this once as long as you play Squabble on the same screen in the same resolution. Copy the values shown below in solver.py on line 101.")
+        print("You only need to run this once as long as you play Squabble on the same screen in the same resolution")
         print("New Grid: ")
         print("startx: " + str(startx))
         print("endy: " + str(endy))
         #print(gridSpace)
         next = next + gridSpace
         print("next: " + str(next))
+    else:
+        with open('grid.txt','r') as f:
+            lines = f.readlines()
+            print(lines)
+            startx = int(lines[0])
+            endy = int(lines[1])
+            next = int(lines[2])
+            MOUSEX = int(lines[3])
+            MOUSEY = int(lines[4])
 
     game = input("Would you like to play Squable? ")
     if game == 'y' or game == "Y" or game == 'yes' or game == 'Yes' or game == 'YES':
@@ -143,6 +167,7 @@ if __name__ == '__main__':
                 exit()
 
     time.sleep(1)
+    pyautogui.click(x=MOUSEX, y=MOUSEY)
     print("== NEW WORD ==")
     
     guessCount = 0
@@ -201,7 +226,7 @@ if __name__ == '__main__':
             # detect if word went through
             time.sleep(.2)
             myScreenshot = pyautogui.screenshot()
-            myScreenshot.save('afterGuess.png')
+            #myScreenshot.save('afterGuess.png')
             #print("guess " + str(guessCount))
             #print( endy - (5 - guessCount) * next)
 
@@ -240,7 +265,7 @@ if __name__ == '__main__':
         WORD_LEN = 5
 
         myScreenshot = pyautogui.screenshot()
-        myScreenshot.save('screen.png')
+        #myScreenshot.save('screen.png')
         #myScreenshot = Image.open("test.png")
 
         #TODO: detect on which screen and the resolution, better key release events
