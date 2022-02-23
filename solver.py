@@ -12,40 +12,6 @@ WORDLE, NERDLEGAME, SQUABBLE = 0,1,2
 BOT, PERSON = 0,1
 pyautogui.PAUSE = 0.01
 
-legal_words = None  # global wordlist for game-specific checks
-
-# different game modes need additional checks. TODO does this support repeated letters?
-def wordle_verify(buf):
-    global legal_words
-    if legal_words is None:
-        legal_words = set(WORDLE_GUESS_SET + WORDLE_ANSWER_SET)
-    if ''.join(buf) in legal_words:
-        return True
-    return False
-
-def nerdle_verify(buf):
-    if buf.count('=') != 1:
-        return False  # there has to be exaclty 1 '='
-    for i in range(len(buf)-1): # check for '//' and '**', which are valid in python but not real math
-        operators = '+-*/'
-        if buf[i] in operators and buf[i+1] in operators:
-            return False
-    try: # try for leading zeros
-        split_i = buf.index('=')
-        left, right = ''.join(buf[:split_i]), ''.join(buf[split_i+1:])
-        if eval(left) == eval(right):
-            # print(left, '     ', right)
-            return True
-    except:
-        return False
-
-additional_verify = { 
-    WORDLE: wordle_verify,
-    NERDLEGAME: nerdle_verify,
-    SQUABBLE: wordle_verify
-}
-
-
 def detectGrid(emptyColor,gridColor):
     print("Place mouse on the screen that has the game, and press ` (button above Tab)") # scale to screenshot
     mousePosition = ()
@@ -109,10 +75,6 @@ def detectGrid(emptyColor,gridColor):
     
 if __name__ == '__main__':
     PLAYER = -1
-    known = {} # ex: {2:'i'}  # {position:letter}
-    maybes = {} # ex: {'l':[1]}  # {letter:[not_pos]}  # correct_letter_wrong_location
-    nots = set('') # ex: set('ave')  # string of letters
-
     startx = 692 
     endy = 777
     next = 75
@@ -125,7 +87,7 @@ if __name__ == '__main__':
     wrong = (155,93,247)
     yellow = (214,190,0)
     grid = (130,53,245)
-    firstGuess = 'crane'
+    firstGuess = 'slate'
     
     game = input("reset Grid? ")
     if game == 'y' or game == "Y" or game == 'yes' or game == 'Yes' or game == 'YES':
@@ -252,8 +214,7 @@ if __name__ == '__main__':
             else:
                 validWord = True
                 guessCount = guessCount + 1
-
-        
+     
         if restartRound:
             print("== NEW WORD ==")
             guessCount = 0
@@ -266,7 +227,6 @@ if __name__ == '__main__':
 
         myScreenshot = pyautogui.screenshot()
         #myScreenshot.save('screen.png')
-        #myScreenshot = Image.open("test.png")
 
         #TODO: detect on which screen and the resolution, better key release events
         colors = []
@@ -300,6 +260,4 @@ if __name__ == '__main__':
             typed = ""
             continue
 
-        tree.findAWordNoInput( typed, colors)
-
-        
+        tree.findAWordNoInput( typed, colors)   
