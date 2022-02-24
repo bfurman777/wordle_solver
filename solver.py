@@ -1,16 +1,21 @@
 import time
 import keyboard # pip3 install keyboard
 from internet import *
+import socket   
 import pyautogui
 from tries import *
 import math
 from PIL import ImageGrab
+import atexit
 from functools import partial
 ImageGrab.grab = partial(ImageGrab.grab, all_screens=True)
 
 WORDLE, NERDLEGAME, SQUABBLE = 0,1,2
 BOT, PERSON = 0,1
 pyautogui.PAUSE = 0.01
+CLIENT = 0
+sock = socket.socket() 
+IP = "127.0.0.1"
 
 def detectGrid(emptyColor,gridColor):
     print("Place mouse on the screen that has the game, and press ` (button above Tab)") # scale to screenshot
@@ -72,7 +77,15 @@ def detectGrid(emptyColor,gridColor):
                     return i + int(counter / 2), j, counter, grid, mousePosition[0], mousePosition[1]
     myScreenshot.save('grid.png')             
     return -1,-1,-1,-1
-    
+
+def exit_handler():
+    print('End of App')
+    if CLIENT == 1:
+        sock.send('END'.encode())
+        sock.close()   
+
+atexit.register(exit_handler)
+
 if __name__ == '__main__':
     PLAYER = -1
     startx = 692 
@@ -116,6 +129,11 @@ if __name__ == '__main__':
         game = input("Do you want the bot to play for you? ")
         if game == 'y' or game == "Y" or game == 'yes' or game == 'Yes' or game == 'YES':
             PLAYER = BOT
+            game = input("Would you like to start a client? ")
+            if game == 'y' or game == "Y" or game == 'yes' or game == 'Yes' or game == 'YES':
+                CLIENT = 1
+                port = 12345 
+                sock.connect((IP, port))
     else:
         game = input("Would you like to play Wordle? ")
         if game == 'y' or game == "Y" or game == 'yes' or game == 'Yes' or game == 'YES':
@@ -198,6 +216,10 @@ if __name__ == '__main__':
                 myScreenshot.getpixel((startx + 2*next, endy - (5 ) * next)) == blank and myScreenshot.getpixel((startx + 3*next, endy - (5 ) * next)) == blank and \
                 myScreenshot.getpixel((startx + 4*next, endy - (5 ) * next)) == blank:
                 print("NEXT WORD!")
+                try:
+                    sock.send('ERRORS'.encode())
+                except socket.error:
+                    print('send failed')
                 restartRound = True
                 break
             elif myScreenshot.getpixel((startx, endy - (5 - guessCount) * next)) == blank and myScreenshot.getpixel((startx + next, endy - (5 - guessCount) * next)) == blank and \
@@ -252,7 +274,15 @@ if __name__ == '__main__':
                 break
         #print(colors)
 
-        if restartRound or colors == ['G','G','G','G','G']:
+        if restartRound or colors == ['G','G','G','G','G']:                       
+            try:
+                sock.send(typed.encode())
+            except socket.error:
+                print('send failed')
+            
+            # receive data from the server and decoding to get the string.
+            #print(sock.recv(1024).decode())
+
             print("== NEW WORD ==")
             time.sleep(0.3)
             tree.findAWordNoInput( typed, ['q'])
